@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+
+spec:
+  ports:
+    - protocol: TCP
+      name: web
+      port: 80
+    - protocol: TCP
+      name: websecure
+      port: 443
+    - protocol: TCP
+      name: admin
+      port: 8080
+  type: LoadBalancer
+  selector:
+    app: traefik
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: default
+  name: traefik-ingress-controller
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  namespace: default
+  name: traefik
+  labels:
+    app: traefik
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      containers:
+        - name: traefik
+          image: traefik:v2.2
+          volumeMounts:
+            - name: traefik-config-static
+              mountPath: /etc/traefik/
+      volumes:
+        - name: traefik-config-static
+          configMap:
+            name: traefik-config-static
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: ingressroutetcpfoo
+  namespace: kubernetes-dashboard
+
+spec:
+  entryPoints:                  
+    - websecure
+  routes:                      
+  - match: HostSNI(`dashboard.k8s.local`)         
+    services:                   
+    - name: kubernetes-dashboard                 
+      port: 443             
+
+  tls:                              
+    passthrough: true         
+

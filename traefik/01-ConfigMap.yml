@@ -22,7 +22,7 @@ data:
           tls:
             certResolver: myresolver
           middlewares:
-          - SecHeader@redis
+          - SecHeaders@redis
 
     api:
       insecure: true
